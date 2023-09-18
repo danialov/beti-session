@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        #activitySection {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<form id="loginForm">
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button type="submit">Login</button>
+</form>
+
+<div id="activitySection">
+    <h2>Welcome!</h2>
+    <p id="activityStatus">Checking activity status...</p>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+        if (data.access_token) {
+            localStorage.setItem('token', data.access_token);
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('activitySection').style.display = 'block';
+            checkActivityStatus();
+        } else {
+            alert('Login failed!');
+        }
+    });
+
+    async function checkActivityStatus() {
+        while (true) {
+            try {
+                const response = await fetch('/auth/check-activity', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const data = await response.json();
+                document.getElementById('activityStatus').innerText = data.status;
+            } catch (error) {
+                document.getElementById('activityStatus').innerText = 'Error fetching activity status';
+            }
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+    }
+</script>
+</body>
+</html>
